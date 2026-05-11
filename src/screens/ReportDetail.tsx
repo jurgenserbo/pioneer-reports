@@ -108,7 +108,7 @@ export function ReportDetail({ name, reportType, source, onBack, onNavigateToRep
               {/* Back button */}
               <button
                 onClick={onBack}
-                className="flex items-center gap-1 w-fit text-[14px] font-medium text-[#006CA9] hover:opacity-80 transition-opacity"
+                className="flex items-center gap-1 w-fit text-[14px] font-medium text-tertiary hover:opacity-80 transition-opacity"
               >
                 <ArrowLeft size={16} />
                 Back

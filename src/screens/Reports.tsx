@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CreateReportModal } from '../components/CreateReportModal'
 import { CreateFolderModal } from '../components/CreateFolderModal'
+import { EmptyState } from '../components/EmptyState'
 import {
   Button,
   BadgeStatus,
@@ -69,7 +70,7 @@ const reportTypeConfig: Record<ReportType, { label: string; type: 'blue' | 'gree
 
 interface OpenReportArgs { name: string; reportType: ReportType; source: string }
 
-export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteFolder, onAddReport, onEditReport, onDuplicateReport, onDeleteReport, onViewAllFolders, onOpenFolder, onOpenReport }: {
+export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteFolder, onAddReport, onEditReport, onDuplicateReport, onDeleteReport, onOpenFolder, onOpenReport }: {
   folders: FolderItem[]
   reports: Report[]
   onAddFolder: (name: string) => void
@@ -79,7 +80,6 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
   onEditReport: (id: string, name: string) => void
   onDuplicateReport: (id: string) => void
   onDeleteReport: (id: string) => void
-  onViewAllFolders?: () => void
   onOpenFolder?: () => void
   onOpenReport?: (r: OpenReportArgs) => void
 }) {
@@ -241,14 +241,27 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
             </div>
           </div>
 
-          {/* Folders count row */}
-          <div className="flex items-center gap-3 px-6 h-14 shrink-0">
-            <span className="flex-1 text-[14px] font-medium text-foreground">{folders.length} folders</span>
-            <Button variant="link" size="sm" onClick={onViewAllFolders}>View all</Button>
-          </div>
+          {reports.length === 0 && folders.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center">
+              <EmptyState
+                icon={<BarChart3 size={24} />}
+                title="No reports yet"
+                description="Create your first report to start tracking and visualizing your data."
+                action={{ label: 'Add report', onClick: () => setAddReportOpen(true) }}
+              />
+            </div>
+          ) : (<>
 
           {/* Folder cards */}
           <div className="shrink-0 h-[142px] hover-scrollbar">
+            {folders.length === 0 ? (
+              <EmptyState
+                icon={<Folder size={24} />}
+                title="No folders yet"
+                description="Create a folder to organize your reports."
+                action={{ label: 'Add folder', onClick: () => setAddFolderOpen(true) }}
+              />
+            ) : (
             <div className="flex px-6 py-2 h-full items-center w-max">
               {folders.map((folder, i) => (
                   <div
@@ -260,7 +273,7 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-background-blue shrink-0">
-                          <Folder size={20} className="text-[#006CA9]" />
+                          <Folder size={20} className="text-tertiary" />
                         </div>
                         <span className="text-[14px] font-medium text-muted-foreground truncate">{folder.count} Reports</span>
                       </div>
@@ -301,6 +314,7 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
                   </div>
                 ))}
             </div>
+            )}
           </div>
 
           {/* Tabs */}
@@ -378,12 +392,32 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {filteredReports.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="p-0">
+                      {reports.length === 0 ? (
+                        <EmptyState
+                          icon={<BarChart3 size={24} />}
+                          title="No reports yet"
+                          description="Create your first report to start tracking and visualizing your data."
+                          action={{ label: 'Add report', onClick: () => setAddReportOpen(true) }}
+                        />
+                      ) : (
+                        <EmptyState
+                          icon={<Search size={24} />}
+                          title="No reports found"
+                          description="There are no reports under this tab. Try switching to a different filter."
+                        />
+                      )}
+                    </td>
+                  </tr>
+                )}
                 {filteredReports.map((report) => {
                   const config = reportTypeConfig[report.reportType]
                   return (
                     <TableRow
                       key={report.id}
-                      className={`cursor-pointer hover:bg-accent transition-colors ${selectedRows.has(report.id) ? 'bg-[#00a991]/5' : ''}`}
+                      className={`cursor-pointer hover:bg-accent transition-colors ${selectedRows.has(report.id) ? 'bg-primary/5' : ''}`}
                       onClick={() => onOpenReport?.({ name: report.name, reportType: report.reportType, source: report.source })}
                     >
                       <td className="h-14 px-2 align-middle border-b border-border">
@@ -445,6 +479,7 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
               </TableBody>
             </Table>
           </div>
+          </>)}
 
         </div>
       </div>

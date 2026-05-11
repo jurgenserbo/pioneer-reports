@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import {
   Button,
+  Checkbox,
   GlobalNav,
   DropdownMenu,
   DropdownMenuTrigger,
@@ -19,7 +20,8 @@ import {
 } from '@assetpandallc/pioneer-design-system'
 import { CreateReportModal } from '../components/CreateReportModal'
 import { CreateFolderModal } from '../components/CreateFolderModal'
-import type { FolderItem } from '../App'
+import { EmptyState } from '../components/EmptyState'
+import type { FolderItem, ReportType } from '../App'
 import {
   ListFilter,
   ArrowUpNarrowWide,
@@ -43,7 +45,7 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
   onAddFolder: (name: string) => void
   onEditFolder: (id: string, name: string) => void
   onDeleteFolder: (id: string) => void
-  onAddReport: (r: { name: string; reportType: string; type: string; source: string }) => void
+  onAddReport: (r: { name: string; reportType: ReportType; type: string; source: string }) => void
   onBack: () => void
   onOpenFolder: () => void
 }) {
@@ -53,6 +55,26 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
   const [editName, setEditName] = useState('')
   const [editError, setEditError] = useState('')
   const [deleteFolder, setDeleteFolder] = useState<FolderItem | null>(null)
+  const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set())
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+
+  function toggleFolder(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    setSelectedFolders(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function handleBulkDelete() {
+    selectedFolders.forEach(id => onDeleteFolder(id))
+    const count = selectedFolders.size
+    setSelectedFolders(new Set())
+    setBulkDeleteOpen(false)
+    toast.success(`${count} folder${count > 1 ? 's' : ''} deleted successfully`)
+  }
 
   function handleEditOpen(folder: FolderItem) {
     setEditFolder(folder)
@@ -99,7 +121,7 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
         userEmail="john@assetpanda.com"
       />
 
-      <div className="flex flex-1 flex-col min-w-0 overflow-y-auto">
+      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
 
         {/* Top Nav */}
         <div className="h-[56px] flex items-center px-6 gap-4 shrink-0">
@@ -127,14 +149,14 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
         </div>
 
         {/* Panel */}
-        <div className="mx-6 rounded-lg border border-border bg-card mb-6">
+        <div className="flex-1 mx-6 rounded-lg border border-border bg-card overflow-hidden flex flex-col mb-6">
 
           {/* Header */}
           <div className="flex items-center gap-2 px-6 py-6 shrink-0">
             <div className="flex flex-1 flex-col gap-2 min-w-0">
               <button
                 onClick={onBack}
-                className="flex items-center gap-1 w-fit text-[14px] font-medium text-[#006CA9] hover:opacity-80 transition-opacity"
+                className="flex items-center gap-1 w-fit text-[14px] font-medium text-tertiary hover:opacity-80 transition-opacity"
               >
                 <ArrowLeft size={16} />
                 Back
@@ -160,20 +182,68 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
             </div>
           </div>
 
+          {/* Bulk actions bar — only visible when folders are selected */}
+          {selectedFolders.size > 0 && (
+            <div className="flex items-center gap-2 px-6 h-12 border-t border-border shrink-0">
+              <span className="flex-1 text-[14px] font-medium text-foreground">
+                {selectedFolders.size} folder{selectedFolders.size > 1 ? 's' : ''} selected
+              </span>
+              <Button variant="link" size="sm" onClick={() => setSelectedFolders(new Set(folders.map(f => f.id)))}>
+                Select all
+              </Button>
+              <Button variant="link" size="sm" onClick={() => setSelectedFolders(new Set())}>
+                Deselect all
+              </Button>
+              <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)}>
+                <Trash2 size={14} />
+                Delete
+              </Button>
+            </div>
+          )}
+
           {/* Folders grid */}
-          <div className="px-6 pb-6">
+          <div className="flex-1 px-6 pb-6 overflow-y-auto hover-scrollbar-y">
+            {folders.length === 0 ? (
+              <EmptyState
+                icon={<Folder size={24} />}
+                title="No folders yet"
+                description="Create a folder to organize your reports and find them quickly."
+                action={{ label: 'Add folder', onClick: () => setAddFolderOpen(true) }}
+              />
+            ) : (
             <div className="grid gap-4 grid-cols-4">
-              {folders.map((folder) => (
+              {folders.map((folder) => {
+                const isSelected = selectedFolders.has(folder.id)
+                return (
                 <div
                   key={folder.id}
-                  onClick={onOpenFolder}
-                  className="bg-card border border-border rounded-2xl flex flex-col px-4 py-3.5 gap-4 cursor-pointer hover:border-primary/40 transition-colors"
+                  onClick={() => onOpenFolder()}
+                  className={`group bg-card border rounded-2xl flex flex-col px-4 py-3.5 gap-4 cursor-pointer transition-colors ${
+                    isSelected
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/40'
+                  }`}
                 >
                   {/* Top row */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-background-blue shrink-0">
-                        <Folder size={20} className="text-[#006CA9]" />
+                      {/* Icon slot: folder icon by default, checkbox on hover / when selected */}
+                      <div
+                        className={`flex items-center justify-center w-9 h-9 rounded-lg shrink-0 transition-colors cursor-pointer ${
+                          isSelected ? 'bg-transparent' : 'bg-background-blue group-hover:bg-transparent'
+                        }`}
+                        onClick={(e) => toggleFolder(folder.id, e)}
+                      >
+                        {isSelected ? (
+                          <Checkbox checked={true} onCheckedChange={() => {}} />
+                        ) : (
+                          <>
+                            <Folder size={20} className="text-tertiary group-hover:hidden" />
+                            <span className="hidden group-hover:flex">
+                              <Checkbox checked={false} onCheckedChange={() => {}} />
+                            </span>
+                          </>
+                        )}
                       </div>
                       <span className="text-[14px] font-medium text-muted-foreground truncate">{folder.count} Reports</span>
                     </div>
@@ -212,8 +282,10 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
                     <p className="text-[12px] text-muted-foreground leading-4 truncate">{folder.description}</p>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
+            )}
           </div>
         </div>
       </div>
@@ -240,6 +312,24 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
           <DialogFooter>
             <Button variant="outline" onClick={handleEditClose}>Cancel</Button>
             <Button variant="default" disabled={!editName.trim()} onClick={handleEditSave}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk delete confirmation modal */}
+      <Dialog open={bulkDeleteOpen} onOpenChange={(v) => { if (!v) setBulkDeleteOpen(false) }}>
+        <DialogContent className="w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Delete {selectedFolders.size} folder{selectedFolders.size > 1 ? 's' : ''}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <p className="text-[14px] text-muted-foreground">
+              Are you sure you want to delete {selectedFolders.size} folder{selectedFolders.size > 1 ? 's' : ''}? This action cannot be undone.
+            </p>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleBulkDelete}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

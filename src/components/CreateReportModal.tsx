@@ -41,6 +41,7 @@ import {
   KPIChart,
   TableChart,
 } from '@assetpandallc/pioneer-design-system'
+import type { ReportType } from '../App'
 import {
   LayoutGrid,
   FilePenLine,
@@ -182,13 +183,13 @@ function SortableFieldRow({
 interface CreateReportModalProps {
   open: boolean
   onClose: () => void
-  onAdd: (report: { name: string; reportType: string; type: string; source: string }) => void
+  onAdd: (report: { name: string; reportType: ReportType; type: string; source: string }) => void
 }
 
 export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalProps) {
   const [activeTab, setActiveTab] = useState('source')
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
-  const [selectedType, setSelectedType] = useState<string | null>(null)
+  const [selectedType, setSelectedType] = useState<ReportType | null>(null)
   const [reportName, setReportName] = useState('')
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
   const [selectedModule, setSelectedModule] = useState<string | null>(null)
@@ -710,7 +711,7 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
             {activeTab === 'source' && reportTypes.map((rt) => (
               <button
                 key={rt.id}
-                onClick={() => setSelectedType(rt.id)}
+                onClick={() => setSelectedType(rt.id as ReportType)}
                 className={`flex items-center gap-4 px-4 py-3 rounded-[14px] border border-border text-left transition-colors ${
                   selectedType === rt.id
                     ? 'bg-background-purple'

@@ -186,7 +186,6 @@ export default function App() {
       onEditReport={editReport}
       onDuplicateReport={duplicateReport}
       onDeleteReport={deleteReport}
-      onViewAllFolders={() => setScreen('folders')}
       onOpenFolder={() => setScreen('folder-detail')}
       onOpenReport={(report) => openReport(report, 'reports')}
     />

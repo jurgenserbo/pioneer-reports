@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { EmptyState } from '../components/EmptyState'
 import {
   Button,
   BadgeStatus,
@@ -62,23 +63,6 @@ interface Report {
   createdBy: string
 }
 
-// ── Mock Data ────────────────────────────────────────────────────────────────
-
-const initialReports: Report[] = [
-  { id: '1',  name: 'Monthly revenue breakdown',    reportType: 'bar',            type: 'Depreciation',   source: '{Account}/{Module}/{Collection}', createdAt: '01-05-2026 09:14 AM', lastUpdated: '04-28-2026 11:02 AM', createdBy: 'John Smith'   },
-  { id: '2',  name: 'Sales trend by region',        reportType: 'line',           type: 'Change reports', source: '{Account}/{Module}/{Collection}', createdAt: '01-12-2026 10:30 AM', lastUpdated: '04-25-2026 03:45 PM', createdBy: 'Jane Doe'     },
-  { id: '3',  name: 'Product category share',       reportType: 'donut',          type: 'Collection',     source: '{Account}/{Module}/{Collection}', createdAt: '02-01-2026 08:00 AM', lastUpdated: '04-20-2026 09:17 AM', createdBy: 'Mike Johnson' },
-  { id: '4',  name: 'Top customers by spend',       reportType: 'table',          type: 'Saved views',    source: '{Account}/{Module}/{Collection}', createdAt: '02-14-2026 02:15 PM', lastUpdated: '04-18-2026 01:33 PM', createdBy: 'Sarah Lee'    },
-  { id: '5',  name: 'Conversion rate KPI',          reportType: 'kpi',            type: 'Form',           source: '{Account}/{Module}/{Form}',       createdAt: '02-22-2026 11:45 AM', lastUpdated: '04-15-2026 10:50 AM', createdBy: 'John Smith'   },
-  { id: '6',  name: 'Quarterly forecast vs actual', reportType: 'horizontal-bar', type: 'Audit',          source: '{Account}/{Module}/{Collection}', createdAt: '03-01-2026 04:00 PM', lastUpdated: '04-12-2026 08:22 AM', createdBy: 'Jane Doe'     },
-  { id: '7',  name: 'Refund requests summary',      reportType: 'table',          type: 'Audit',          source: '{Account}/{Module}/{Collection}', createdAt: '03-08-2026 07:30 AM', lastUpdated: '04-10-2026 04:05 PM', createdBy: 'Mike Johnson' },
-  { id: '8',  name: 'Average order value trend',    reportType: 'line',           type: 'Change reports', source: '{Account}/{Module}/{Collection}', createdAt: '03-15-2026 01:10 PM', lastUpdated: '04-08-2026 11:40 AM', createdBy: 'Sarah Lee'    },
-  { id: '9',  name: 'Pipeline stage distribution',  reportType: 'donut',          type: 'Collection',     source: '{Account}/Sales/{Pipeline}',      createdAt: '03-22-2026 09:00 AM', lastUpdated: '04-07-2026 02:15 PM', createdBy: 'John Smith'   },
-  { id: '10', name: 'Win/loss ratio by rep',        reportType: 'bar',            type: 'Saved views',    source: '{Account}/Sales/{Rep}',           createdAt: '04-01-2026 03:20 PM', lastUpdated: '04-05-2026 09:30 AM', createdBy: 'Jane Doe'     },
-  { id: '11', name: 'New leads this month',         reportType: 'kpi',            type: 'Form',           source: '{Account}/CRM/{Leads}',           createdAt: '04-05-2026 10:45 AM', lastUpdated: '04-03-2026 03:55 PM', createdBy: 'Mike Johnson' },
-  { id: '12', name: 'Customer LTV distribution',    reportType: 'horizontal-bar', type: 'Collection',     source: '{Account}/CRM/{Collection}',      createdAt: '04-08-2026 08:30 AM', lastUpdated: '04-28-2026 12:00 PM', createdBy: 'Sarah Lee'    },
-]
-
 // ── Report type config ───────────────────────────────────────────────────────
 
 const reportTypeConfig: Record<ReportType, { label: string; type: 'blue' | 'green' | 'orange' | 'neutral' | 'red' | 'purple'; icon: React.ReactNode }> = {
@@ -97,7 +81,7 @@ const infoCards = [
     id: 'share',
     title: 'Share with users',
     description: 'Share this folder and its reports with specific users or teams.',
-    icon: <Share2 size={16} className="text-[#006CA9]" />,
+    icon: <Share2 size={16} className="text-tertiary" />,
     buttonIcon: <Share2 size={14} />,
     buttonLabel: 'Share',
   },
@@ -105,7 +89,7 @@ const infoCards = [
     id: 'export',
     title: 'Export report',
     description: 'Download reports in CSV, PDF, or Excel format for external use.',
-    icon: <Download size={16} className="text-[#006CA9]" />,
+    icon: <Download size={16} className="text-tertiary" />,
     buttonIcon: <Download size={14} />,
     buttonLabel: 'Export',
   },
@@ -113,7 +97,7 @@ const infoCards = [
     id: 'schedule',
     title: 'Report schedules',
     description: 'Automate report delivery on a recurring schedule via email.',
-    icon: <CalendarClock size={16} className="text-[#006CA9]" />,
+    icon: <CalendarClock size={16} className="text-tertiary" />,
     buttonIcon: <CalendarClock size={14} />,
     buttonLabel: 'Schedule',
   },
@@ -131,7 +115,7 @@ export function FolderDetail({ onBack, onNavigateToReports, onOpenReport, onEdit
   onDuplicateReport: (id: string) => void
   onDeleteReport: (id: string) => void
 }) {
-  const [reports, setReports] = useState<Report[]>(initialReports)
+  const [reports, setReports] = useState<Report[]>([])
   const [editingReport, setEditingReport] = useState<Report | null>(null)
   const [editName, setEditName] = useState('')
   const [deletingReport, setDeletingReport] = useState<Report | null>(null)
@@ -221,7 +205,7 @@ export function FolderDetail({ onBack, onNavigateToReports, onOpenReport, onEdit
             <div className="flex flex-1 flex-col gap-2 min-w-0">
               <button
                 onClick={onBack}
-                className="flex items-center gap-1 w-fit text-[14px] font-medium text-[#006CA9] hover:opacity-80 transition-opacity"
+                className="flex items-center gap-1 w-fit text-[14px] font-medium text-tertiary hover:opacity-80 transition-opacity"
               >
                 <ArrowLeft size={16} />
                 Back
@@ -281,6 +265,17 @@ export function FolderDetail({ onBack, onNavigateToReports, onOpenReport, onEdit
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {reports.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="p-0">
+                      <EmptyState
+                        icon={<BarChart3 size={24} />}
+                        title="No reports in this folder"
+                        description="Add a report to this folder to start organizing your data."
+                      />
+                    </td>
+                  </tr>
+                )}
                 {reports.map((report) => {
                   const config = reportTypeConfig[report.reportType]
                   return (
