@@ -100,7 +100,7 @@ export function ReportDetail({ name, reportType, source, onBack, onNavigateToRep
         </div>
 
         {/* Panel */}
-        <div className="flex-1 mx-6 rounded-lg border border-border bg-card overflow-hidden flex flex-col mb-6">
+        <div className="flex-1 mx-6 my-4 rounded-lg border border-border bg-card overflow-hidden flex flex-col">
 
           {/* Header */}
           <div className="flex items-center gap-2 px-6 py-6 border-b border-border shrink-0">

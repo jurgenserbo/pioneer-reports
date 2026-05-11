@@ -107,9 +107,10 @@ const infoCards = [
 
 interface OpenReportArgs { name: string; reportType: ReportType; source: string }
 
-export function FolderDetail({ onBack, onNavigateToReports, onOpenReport, onEditReport, onDuplicateReport, onDeleteReport }: {
+export function FolderDetail({ onBack, onNavigateToReports, source = 'folders', onOpenReport, onEditReport, onDuplicateReport, onDeleteReport }: {
   onBack: () => void
   onNavigateToReports: () => void
+  source?: 'reports' | 'folders'
   onOpenReport: (r: OpenReportArgs) => void
   onEditReport: (id: string, name: string) => void
   onDuplicateReport: (id: string) => void
@@ -178,8 +179,12 @@ export function FolderDetail({ onBack, onNavigateToReports, onOpenReport, onEdit
             </button>
             <div className="flex items-center bg-white rounded-lg shadow-[2px_2px_4px_0px_rgba(0,0,0,0.08),0px_2px_2px_0px_rgba(80,68,225,0.06)] px-2 py-1 h-8 gap-1">
               <button onClick={onNavigateToReports} className="text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors">Reports</button>
-              <span className="text-[12px] font-medium text-muted-foreground">/</span>
-              <button onClick={onBack} className="text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors">Folders</button>
+              {source === 'folders' && (
+                <>
+                  <span className="text-[12px] font-medium text-muted-foreground">/</span>
+                  <button onClick={onBack} className="text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors">Folders</button>
+                </>
+              )}
               <span className="text-[12px] font-medium text-muted-foreground">/</span>
               <span className="text-[12px] font-medium text-primary">Monthly sales overview</span>
             </div>
@@ -198,7 +203,7 @@ export function FolderDetail({ onBack, onNavigateToReports, onOpenReport, onEdit
         </div>
 
         {/* Panel */}
-        <div className="flex-1 mx-6 rounded-lg border border-border bg-card overflow-hidden flex flex-col mb-6">
+        <div className="flex-1 mx-6 my-4 rounded-lg border border-border bg-card overflow-hidden flex flex-col">
 
           {/* Header */}
           <div className="flex items-center gap-2 px-6 py-6 shrink-0">

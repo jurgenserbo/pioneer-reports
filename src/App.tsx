@@ -85,6 +85,12 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('reports')
   const [selectedReport, setSelectedReport] = useState<SelectedReport | null>(null)
   const [previousScreen, setPreviousScreen] = useState<Screen>('reports')
+  const [folderSource, setFolderSource] = useState<Screen>('reports')
+
+  function openFolder(from: Screen) {
+    setFolderSource(from)
+    setScreen('folder-detail')
+  }
   const [folders, setFolders] = useState<FolderItem[]>(initialFolders)
   const [reports, setReports] = useState<Report[]>(initialReports)
 
@@ -153,7 +159,8 @@ export default function App() {
   if (screen === 'folder-detail') {
     return (
       <FolderDetail
-        onBack={() => setScreen('folders')}
+        source={folderSource === 'folders' ? 'folders' : 'reports'}
+        onBack={() => setScreen(folderSource)}
         onNavigateToReports={() => setScreen('reports')}
         onOpenReport={(report) => openReport(report, 'folder-detail')}
         onEditReport={editReport}
@@ -171,7 +178,7 @@ export default function App() {
         onDeleteFolder={deleteFolder}
         onAddReport={addReport}
         onBack={() => setScreen('reports')}
-        onOpenFolder={() => setScreen('folder-detail')}
+        onOpenFolder={() => openFolder('folders')}
       />
     )
   }
@@ -186,7 +193,8 @@ export default function App() {
       onEditReport={editReport}
       onDuplicateReport={duplicateReport}
       onDeleteReport={deleteReport}
-      onOpenFolder={() => setScreen('folder-detail')}
+      onViewAllFolders={() => setScreen('folders')}
+      onOpenFolder={() => openFolder('reports')}
       onOpenReport={(report) => openReport(report, 'reports')}
     />
   )

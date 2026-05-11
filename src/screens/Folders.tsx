@@ -57,6 +57,7 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
   const [deleteFolder, setDeleteFolder] = useState<FolderItem | null>(null)
   const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set())
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [hoveredFolder, setHoveredFolder] = useState<string | null>(null)
 
   function toggleFolder(id: string, e: React.MouseEvent) {
     e.stopPropagation()
@@ -149,7 +150,7 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
         </div>
 
         {/* Panel */}
-        <div className="flex-1 mx-6 rounded-lg border border-border bg-card overflow-hidden flex flex-col mb-6">
+        <div className="flex-1 mx-6 my-4 rounded-lg border border-border bg-card overflow-hidden flex flex-col">
 
           {/* Header */}
           <div className="flex items-center gap-2 px-6 py-6 shrink-0">
@@ -218,7 +219,9 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
                 <div
                   key={folder.id}
                   onClick={() => onOpenFolder()}
-                  className={`group bg-card border rounded-2xl flex flex-col px-4 py-3.5 gap-4 cursor-pointer transition-colors ${
+                  onMouseEnter={() => setHoveredFolder(folder.id)}
+                  onMouseLeave={() => setHoveredFolder(null)}
+                  className={`bg-card border rounded-2xl flex flex-col px-4 py-3.5 gap-4 cursor-pointer transition-colors ${
                     isSelected
                       ? 'border-primary bg-primary/5'
                       : 'border-border hover:border-primary/40'
@@ -230,19 +233,14 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
                       {/* Icon slot: folder icon by default, checkbox on hover / when selected */}
                       <div
                         className={`flex items-center justify-center w-9 h-9 rounded-lg shrink-0 transition-colors cursor-pointer ${
-                          isSelected ? 'bg-transparent' : 'bg-background-blue group-hover:bg-transparent'
+                          isSelected || hoveredFolder === folder.id ? 'bg-transparent' : 'bg-background-blue'
                         }`}
                         onClick={(e) => toggleFolder(folder.id, e)}
                       >
-                        {isSelected ? (
-                          <Checkbox checked={true} onCheckedChange={() => {}} />
+                        {isSelected || hoveredFolder === folder.id ? (
+                          <Checkbox checked={isSelected} onCheckedChange={() => {}} />
                         ) : (
-                          <>
-                            <Folder size={20} className="text-tertiary group-hover:hidden" />
-                            <span className="hidden group-hover:flex">
-                              <Checkbox checked={false} onCheckedChange={() => {}} />
-                            </span>
-                          </>
+                          <Folder size={20} className="text-tertiary" />
                         )}
                       </div>
                       <span className="text-[14px] font-medium text-muted-foreground truncate">{folder.count} Reports</span>

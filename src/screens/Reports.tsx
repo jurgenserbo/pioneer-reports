@@ -70,7 +70,7 @@ const reportTypeConfig: Record<ReportType, { label: string; type: 'blue' | 'gree
 
 interface OpenReportArgs { name: string; reportType: ReportType; source: string }
 
-export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteFolder, onAddReport, onEditReport, onDuplicateReport, onDeleteReport, onOpenFolder, onOpenReport }: {
+export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteFolder, onAddReport, onEditReport, onDuplicateReport, onDeleteReport, onViewAllFolders, onOpenFolder, onOpenReport }: {
   folders: FolderItem[]
   reports: Report[]
   onAddFolder: (name: string) => void
@@ -80,6 +80,7 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
   onEditReport: (id: string, name: string) => void
   onDuplicateReport: (id: string) => void
   onDeleteReport: (id: string) => void
+  onViewAllFolders?: () => void
   onOpenFolder?: () => void
   onOpenReport?: (r: OpenReportArgs) => void
 }) {
@@ -213,7 +214,7 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
         </div>
 
         {/* Panel */}
-        <div className="flex-1 mx-6 rounded-lg border border-border bg-card overflow-hidden flex flex-col mb-6">
+        <div className="flex-1 mx-6 my-4 rounded-lg border border-border bg-card overflow-hidden flex flex-col">
 
           {/* Header */}
           <div className="flex items-center gap-2 px-6 py-6 shrink-0">
@@ -251,6 +252,14 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
               />
             </div>
           ) : (<>
+
+          {/* Folders count row — only when folders exist */}
+          {folders.length > 0 && (
+            <div className="flex items-center gap-3 px-6 h-14 shrink-0">
+              <span className="flex-1 text-[14px] font-medium text-foreground">{folders.length} folders</span>
+              <Button variant="link" size="sm" onClick={onViewAllFolders}>View all</Button>
+            </div>
+          )}
 
           {/* Folder cards */}
           <div className="shrink-0 h-[142px] hover-scrollbar">
