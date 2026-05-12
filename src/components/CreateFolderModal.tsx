@@ -16,23 +16,25 @@ import type { FolderItem } from '../App'
 interface CreateFolderModalProps {
   open: boolean
   onClose: () => void
-  onAdd: (name: string) => void
+  onAdd: (name: string, description: string) => void
   folders: FolderItem[]
 }
 
 export function CreateFolderModal({ open, onClose, onAdd, folders }: CreateFolderModalProps) {
   const [folderName, setFolderName] = useState('')
+  const [folderDescription, setFolderDescription] = useState('')
   const [error, setError] = useState('')
 
   function handleClose() {
     setFolderName('')
+    setFolderDescription('')
     setError('')
     onClose()
   }
 
   function handleAdd() {
     const trimmed = folderName.trim()
-    if (!trimmed) return
+    if (!trimmed) { setError('Folder name is required.'); return }
 
     const isDuplicate = folders.some(
       (f) => f.name.trim().toLowerCase() === trimmed.toLowerCase()
@@ -43,7 +45,7 @@ export function CreateFolderModal({ open, onClose, onAdd, folders }: CreateFolde
       return
     }
 
-    onAdd(trimmed)
+    onAdd(trimmed, folderDescription.trim())
     toast.success('Folder created successfully')
     handleClose()
   }
@@ -56,28 +58,35 @@ export function CreateFolderModal({ open, onClose, onAdd, folders }: CreateFolde
         </DialogHeader>
 
         <DialogBody>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="folder-name">Folder name</Label>
-            <Input
-              id="folder-name"
-              placeholder="Enter folder name"
-              value={folderName}
-              onChange={(e) => {
-                setFolderName(e.target.value)
-                if (error) setError('')
-              }}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
-              autoFocus
-            />
-            {error && (
-              <p className="text-[12px] text-destructive">{error}</p>
-            )}
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="folder-name">Folder name</Label>
+              <Input
+                id="folder-name"
+                placeholder="Enter folder name"
+                value={folderName}
+                onChange={(e) => { setFolderName(e.target.value); if (error) setError('') }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+                autoFocus
+              />
+              {error && <p className="text-[12px] text-destructive">{error}</p>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="folder-description">Description</Label>
+              <Input
+                id="folder-description"
+                placeholder="Add a description..."
+                value={folderDescription}
+                onChange={(e) => setFolderDescription(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+              />
+            </div>
           </div>
         </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>Cancel</Button>
-          <Button variant="default" disabled={!folderName.trim()} onClick={handleAdd}>Add</Button>
+          <Button variant="default" onClick={handleAdd}>Add</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

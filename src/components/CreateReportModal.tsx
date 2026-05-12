@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -35,6 +35,8 @@ import {
   TabsList,
   TabsTrigger,
   Checkbox,
+  Command,
+  CommandInput,
   BarChartInteractive,
   LineChartInteractive,
   PieChartInteractive,
@@ -59,7 +61,6 @@ import {
   Eye,
   EyeOff,
   ArrowLeft,
-  Search,
   Trash2,
   Type,
 } from 'lucide-react'
@@ -193,6 +194,25 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
   const [reportName, setReportName] = useState('')
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
   const [selectedModule, setSelectedModule] = useState<string | null>(null)
+  const [nameError, setNameError] = useState('')
+  const [accountError, setAccountError] = useState('')
+  const [moduleError, setModuleError] = useState('')
+  const [sourceError, setSourceError] = useState('')
+  const [sourceFieldError, setSourceFieldError] = useState('')
+  const [sourceFieldValue, setSourceFieldValue] = useState<string | null>(null)
+  const [typeError, setTypeError] = useState('')
+  const sourceFieldRef = useRef<HTMLDivElement>(null)
+
+  const scrollPanelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (selectedSource) {
+      setTimeout(() => {
+        const el = scrollPanelRef.current
+        if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+      }, 50)
+    }
+  }, [selectedSource])
 
   // Filters step state
   const [filterRows, setFilterRows] = useState<FilterRow[]>([{ id: '1', field: '', operator: '', value: '' }])
@@ -236,6 +256,13 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
     setReportName('')
     setSelectedAccount(null)
     setSelectedModule(null)
+    setNameError('')
+    setAccountError('')
+    setModuleError('')
+    setSourceError('')
+    setSourceFieldError('')
+    setSourceFieldValue(null)
+    setTypeError('')
     setFilterRows([{ id: '1', field: '', operator: '', value: '' }])
     setChangeField(null)
     setSortByField(null)
@@ -259,7 +286,23 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   )
 
-  const canProceed = reportName.trim() !== '' && selectedAccount !== null && selectedModule !== null && selectedType !== null
+  const canProceed = reportName.trim() !== '' && selectedAccount !== null && selectedModule !== null && selectedSource !== null && sourceFieldValue !== null && selectedType !== null
+
+  function handleNextFromSource() {
+    const hasName = reportName.trim() !== ''
+    const hasAccount = selectedAccount !== null
+    const hasModule = selectedModule !== null
+    const hasSource = selectedSource !== null
+    const hasSourceField = sourceFieldValue !== null
+    const hasType = selectedType !== null
+    if (!hasName) setNameError('Report name is required.')
+    if (!hasAccount) setAccountError('Please select an account.')
+    if (!hasModule) setModuleError('Please select a module.')
+    if (!hasSource) setSourceError('Please select a data source.')
+    if (hasSource && !hasSourceField) setSourceFieldError('This field is required.')
+    if (!hasType) setTypeError('Please select a report type.')
+    if (hasName && hasAccount && hasModule && hasSource && hasSourceField && hasType) setActiveTab('configure')
+  }
 
   function toggleFieldVisibility(id: string) {
     setFieldVisibility(prev => ({ ...prev, [id]: !prev[id] }))
@@ -290,7 +333,7 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent
-        className="w-[80vw] max-w-[80vw] h-[80vh]"
+        className="w-[80vw] max-w-[1336px] h-[80vh]"
         onInteractOutside={() => {}}
         onEscapeKeyDown={() => handleClose()}
       >
@@ -302,7 +345,7 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
         {/* Body */}
         <DialogBody className="p-0 flex min-h-0">
           {/* Left panel */}
-          <div className="w-1/2 flex flex-col border-r border-border min-w-0 min-h-0">
+          <div className={`flex flex-col min-w-0 min-h-0 ${activeTab === 'filters' ? 'w-full' : 'w-1/2 border-r border-border'}`}>
 
             {/* Sticky tabs */}
             <div className="shrink-0 px-6 pt-4 pb-2 bg-card">
@@ -313,35 +356,39 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
                     { value: 'configure', label: 'Configure', step: 2 },
                     ...(selectedType === 'table' ? [{ value: 'table', label: 'Table', step: 3 }] : []),
                     { value: 'filters',   label: 'Filters',   step: selectedType === 'table' ? 4 : 3 },
-                  ].map(({ value, label, step }) => (
-                    <TabsTrigger key={value} value={value}>
-                      {label}
-                      <span className="flex items-center justify-center w-[18px] h-[18px] rounded-full bg-secondary text-secondary-foreground text-[11px] font-bold leading-none ml-1">
-                        {step}
-                      </span>
-                    </TabsTrigger>
-                  ))}
+                  ].map(({ value, label, step }) => {
+                    const disabled = value !== 'source' && !canProceed
+                    return (
+                      <TabsTrigger key={value} value={value} disabled={disabled} className={disabled ? 'opacity-40 cursor-not-allowed' : ''}>
+                        {label}
+                        <span className="flex items-center justify-center w-[18px] h-[18px] rounded-full bg-secondary text-secondary-foreground text-[11px] font-bold leading-none ml-1">
+                          {step}
+                        </span>
+                      </TabsTrigger>
+                    )
+                  })}
                 </TabsList>
               </Tabs>
             </div>
 
             {/* Scrollable content */}
-            <div className="flex-1 flex flex-col gap-4 px-6 pt-4 pb-4 overflow-y-auto hover-scrollbar-y min-h-0">
+            <div ref={scrollPanelRef} className="flex-1 flex flex-col gap-4 px-6 pt-4 pb-4 overflow-y-auto hover-scrollbar-y min-h-0">
 
             {activeTab === 'source' && <>
               {/* Form fields */}
               <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-6">
-                  <Label htmlFor="report-name" className="text-sm font-bold w-[130px] shrink-0">Report name</Label>
-                  <div className="flex-1">
-                    <Field id="report-name" label={false} placeholder="" value={reportName} onChange={(e) => setReportName(e.target.value)} />
+                <div className="flex items-start gap-6">
+                  <Label htmlFor="report-name" className="text-sm font-bold w-[130px] shrink-0 pt-2">Report name</Label>
+                  <div className="flex-1 flex flex-col gap-1">
+                    <Field id="report-name" label={false} placeholder="" value={reportName} onChange={(e) => { setReportName(e.target.value); if (nameError) setNameError('') }} />
+                    {nameError && <p className="text-[12px] text-destructive">{nameError}</p>}
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <Label className="text-sm font-bold w-[130px] shrink-0">Account</Label>
-                  <div className="flex-1">
-                    <Select value={selectedAccount ?? ''} onValueChange={setSelectedAccount}>
-                      <SelectTrigger className="w-full">
+                <div className="flex items-start gap-6">
+                  <Label className="text-sm font-bold w-[130px] shrink-0 pt-2">Account</Label>
+                  <div className="flex-1 flex flex-col gap-1">
+                    <Select value={selectedAccount ?? ''} onValueChange={(v) => { setSelectedAccount(v); if (accountError) setAccountError('') }}>
+                      <SelectTrigger className={`w-full ${accountError ? 'border-destructive' : ''}`}>
                         <SelectValue placeholder="" />
                       </SelectTrigger>
                       <SelectContent className="[&>div:first-child]:hidden">
@@ -349,13 +396,14 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
                         <SelectItem value="account2">Account 2</SelectItem>
                       </SelectContent>
                     </Select>
+                    {accountError && <p className="text-[12px] text-destructive">{accountError}</p>}
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <Label className="text-sm font-bold w-[130px] shrink-0">Module</Label>
-                  <div className="flex-1">
-                    <Select disabled={!selectedAccount} value={selectedModule ?? ''} onValueChange={setSelectedModule}>
-                      <SelectTrigger className="w-full">
+                <div className="flex items-start gap-6">
+                  <Label className="text-sm font-bold w-[130px] shrink-0 pt-2">Module</Label>
+                  <div className="flex-1 flex flex-col gap-1">
+                    <Select disabled={!selectedAccount} value={selectedModule ?? ''} onValueChange={(v) => { setSelectedModule(v); if (moduleError) setModuleError('') }}>
+                      <SelectTrigger className={`w-full ${moduleError ? 'border-destructive' : ''}`}>
                         <SelectValue placeholder="" />
                       </SelectTrigger>
                       <SelectContent className="[&>div:first-child]:hidden">
@@ -363,6 +411,7 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
                         <SelectItem value="module2">Module 2</SelectItem>
                       </SelectContent>
                     </Select>
+                    {moduleError && <p className="text-[12px] text-destructive">{moduleError}</p>}
                   </div>
                 </div>
               </div>
@@ -371,6 +420,7 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
               <div className="flex flex-col gap-1">
                 <p className="text-[14px] font-bold text-foreground">Data source</p>
                 <p className="text-[12px] text-muted-foreground">Where should this report pull data from.</p>
+                {sourceError && <p className="text-[12px] text-destructive">{sourceError}</p>}
               </div>
 
               {/* Source type cards */}
@@ -378,7 +428,18 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
                 {sourceTypes.map((src) => (
                   <button
                     key={src.id}
-                    onClick={() => setSelectedSource(src.id)}
+                    onClick={() => {
+                      setSelectedSource(src.id)
+                      setSourceFieldValue(null)
+                      if (sourceError) setSourceError('')
+                      if (sourceFieldError) setSourceFieldError('')
+                      if (src.id === 'change-report') {
+                        setSelectedType('table')
+                        if (typeError) setTypeError('')
+                      } else if (selectedSource === 'change-report') {
+                        setSelectedType(null)
+                      }
+                    }}
                     className={`flex items-center gap-4 px-4 py-3 border text-left transition-colors ${
                       selectedSource === src.id
                         ? 'rounded-[14px] border-border bg-background-purple'
@@ -400,11 +461,11 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
               {selectedSource && (() => {
                 const src = sourceTypes.find(s => s.id === selectedSource)!
                 return (
-                  <div className="flex items-center gap-6">
-                    <Label className="text-sm font-bold w-[130px] shrink-0">{src.fieldLabel}</Label>
-                    <div className="flex-1">
-                      <Select>
-                        <SelectTrigger className="w-full">
+                  <div ref={sourceFieldRef} className="flex items-start gap-6">
+                    <Label className="text-sm font-bold w-[130px] shrink-0 pt-2">{src.fieldLabel}</Label>
+                    <div className="flex-1 flex flex-col gap-1">
+                      <Select value={sourceFieldValue ?? ''} onValueChange={(v) => { setSourceFieldValue(v); if (sourceFieldError) setSourceFieldError('') }}>
+                        <SelectTrigger className={`w-full ${sourceFieldError ? 'border-destructive' : ''}`}>
                           <SelectValue placeholder="" />
                         </SelectTrigger>
                         <SelectContent className="[&>div:first-child]:hidden">
@@ -412,6 +473,7 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
                           <SelectItem value="option2">{src.fieldLabel} 2</SelectItem>
                         </SelectContent>
                       </Select>
+                      {sourceFieldError && <p className="text-[12px] text-destructive">{sourceFieldError}</p>}
                     </div>
                   </div>
                 )
@@ -451,13 +513,17 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
                     </Select>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 rounded-[10px] border border-border bg-card px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setShowOfflineChanges(v => !v)}
+                  className={`flex items-center gap-3 rounded-[10px] border px-4 py-3 text-left transition-colors w-full ${showOfflineChanges ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
+                >
                   <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                     <span className="text-[14px] font-bold text-foreground">Show offline changes</span>
                     <span className="text-[12px] text-muted-foreground leading-4">Date&amp;time of offline change is different from the date&amp;time it was logged in the system when the user went online.</span>
                   </div>
-                  <Checkbox checked={showOfflineChanges} onCheckedChange={(v) => setShowOfflineChanges(v === true)} />
-                </div>
+                  <Checkbox checked={showOfflineChanges} onCheckedChange={(v) => setShowOfflineChanges(v === true)} onClick={(e) => e.stopPropagation()} />
+                </button>
               </>}
 
               {/* ── Table ─────────────────────────────────────────────── */}
@@ -480,13 +546,17 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
                     </Select>
                   </div>
                 </div>
-                <div className="flex items-start gap-3 rounded-[10px] border border-border bg-card px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setShowOfflineChanges(v => !v)}
+                  className={`flex items-center gap-3 rounded-[10px] border px-4 py-3 text-left transition-colors w-full ${showOfflineChanges ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}
+                >
                   <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                     <span className="text-[14px] font-bold text-foreground">Show offline changes</span>
                     <span className="text-[12px] text-muted-foreground leading-4">Date&amp;time of offline change is different from the date&amp;time it was logged in the system when the user went online.</span>
                   </div>
-                  <Checkbox checked={showOfflineChanges} onCheckedChange={(v) => setShowOfflineChanges(v === true)} />
-                </div>
+                  <Checkbox checked={showOfflineChanges} onCheckedChange={(v) => setShowOfflineChanges(v === true)} onClick={(e) => e.stopPropagation()} />
+                </button>
               </>}
 
               {/* ── Line chart ────────────────────────────────────────── */}
@@ -615,17 +685,15 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
             </>}
 
             {activeTab === 'table' && <>
-              <div className="flex items-center gap-2 border border-border rounded-md px-3 h-10 bg-input">
-                <Search size={14} className="text-muted-foreground shrink-0" />
-                <input
-                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                  placeholder="Search"
-                  value={fieldSearch}
-                  onChange={(e) => setFieldSearch(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-col rounded-md border border-border overflow-hidden">
-                <div className="flex items-center gap-2 px-3 py-2 bg-muted border-b border-border">
+              <div className="border border-border rounded-md overflow-hidden">
+                <Command shouldFilter={false} className="h-auto">
+                  <CommandInput
+                    placeholder="Search"
+                    value={fieldSearch}
+                    onValueChange={setFieldSearch}
+                  />
+                </Command>
+                <div className="flex items-center gap-2 px-3 py-2 bg-muted">
                   <span className="flex-1 text-[13px] font-bold text-foreground">Fields</span>
                   <button onClick={toggleAllVisibility} className="text-tertiary hover:opacity-70 transition-opacity">
                     {allVisible ? <Eye size={16} /> : <EyeOff size={16} />}
@@ -707,13 +775,20 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
           </div>
 
           {/* Right panel */}
-          <div className="w-1/2 flex flex-col gap-3 py-4 pl-6 pr-6 overflow-y-auto hover-scrollbar-y">
-            {activeTab === 'source' && reportTypes.map((rt) => (
+          <div className={`w-1/2 flex flex-col gap-3 py-4 pl-6 pr-6 overflow-y-auto hover-scrollbar-y ${activeTab === 'filters' ? 'hidden' : ''}`}>
+            {activeTab === 'source' && <>
+              {typeError && <p className="text-[12px] text-destructive -mb-1">{typeError}</p>}
+              {reportTypes.map((rt) => {
+                const isDisabled = selectedSource === 'change-report' && rt.id !== 'table'
+                return (
               <button
                 key={rt.id}
-                onClick={() => setSelectedType(rt.id as ReportType)}
+                disabled={isDisabled}
+                onClick={() => { if (!isDisabled) { setSelectedType(rt.id as ReportType); if (typeError) setTypeError('') } }}
                 className={`flex items-center gap-4 px-4 py-3 rounded-[14px] border border-border text-left transition-colors ${
-                  selectedType === rt.id
+                  isDisabled
+                    ? 'opacity-40 cursor-not-allowed bg-card'
+                    : selectedType === rt.id
                     ? 'bg-background-purple'
                     : 'bg-card hover:bg-accent'
                 }`}
@@ -729,7 +804,8 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
                   <span className="text-[14px] text-muted-foreground leading-5">{rt.description}</span>
                 </div>
               </button>
-            ))}
+              )
+            })}</>}
 
             {activeTab === 'table' && (() => {
               const visibleFields = fields.filter(f => fieldVisibility[f.id])
@@ -816,15 +892,9 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
           )}
           <Button variant="outline" onClick={handleClose}>Cancel</Button>
           {activeTab === 'source' && (
-            <Button variant="default" disabled={!canProceed} onClick={() => setActiveTab('configure')}>Next</Button>
+            <Button variant="default" onClick={handleNextFromSource}>Next</Button>
           )}
-          {activeTab === 'configure' && (
-            <Button variant="default" onClick={() => setActiveTab(selectedType === 'table' ? 'table' : 'filters')}>Next</Button>
-          )}
-          {activeTab === 'table' && (
-            <Button variant="default" onClick={() => setActiveTab('filters')}>Next</Button>
-          )}
-          {activeTab === 'filters' && (
+          {(activeTab === 'configure' || activeTab === 'table' || activeTab === 'filters') && (
             <Button variant="default" onClick={() => {
               const src = sourceTypes.find(s => s.id === selectedSource)
               onAdd({

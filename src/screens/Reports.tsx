@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CreateReportModal } from '../components/CreateReportModal'
 import { CreateFolderModal } from '../components/CreateFolderModal'
 import { EmptyState } from '../components/EmptyState'
+import { MoveToFolderModal } from '../components/MoveToFolderModal'
 import {
   Button,
   BadgeStatus,
@@ -26,6 +27,10 @@ import {
   DialogFooter,
   Label,
   Input,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@assetpandallc/pioneer-design-system'
 import * as TabsPrimitive from '@radix-ui/react-tabs'
 import { toast } from 'sonner'
@@ -70,49 +75,55 @@ const reportTypeConfig: Record<ReportType, { label: string; type: 'blue' | 'gree
 
 interface OpenReportArgs { name: string; reportType: ReportType; source: string }
 
-export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteFolder, onAddReport, onEditReport, onDuplicateReport, onDeleteReport, onViewAllFolders, onOpenFolder, onOpenReport }: {
+export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteFolder, onAddReport, onEditReport, onDuplicateReport, onDeleteReport, onMoveToFolder, onViewAllFolders, onOpenFolder, onOpenReport }: {
   folders: FolderItem[]
   reports: Report[]
-  onAddFolder: (name: string) => void
-  onEditFolder: (id: string, name: string) => void
+  onAddFolder: (name: string, description: string) => void
+  onEditFolder: (id: string, name: string, description?: string) => void
   onDeleteFolder: (id: string) => void
   onAddReport: (r: Omit<Report, 'id' | 'createdAt' | 'lastUpdated' | 'createdBy' | 'owner'>) => void
   onEditReport: (id: string, name: string) => void
   onDuplicateReport: (id: string) => void
   onDeleteReport: (id: string) => void
+  onMoveToFolder: (reportId: string, folderId: string) => void
   onViewAllFolders?: () => void
-  onOpenFolder?: () => void
+  onOpenFolder?: (folder: FolderItem) => void
   onOpenReport?: (r: OpenReportArgs) => void
 }) {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState('all')
   const [addReportOpen, setAddReportOpen] = useState(false)
   const [addFolderOpen, setAddFolderOpen] = useState(false)
+  const [moveToFolderOpen, setMoveToFolderOpen] = useState(false)
   const [editingFolder, setEditingFolder] = useState<FolderItem | null>(null)
   const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
   const [editError, setEditError] = useState('')
   const [deletingFolder, setDeletingFolder] = useState<FolderItem | null>(null)
 
   function handleEditOpen(folder: FolderItem) {
     setEditingFolder(folder)
     setEditName(folder.name)
+    setEditDescription(folder.description ?? '')
     setEditError('')
   }
 
   function handleEditClose() {
     setEditingFolder(null)
     setEditName('')
+    setEditDescription('')
     setEditError('')
   }
 
   function handleEditSave() {
     const trimmed = editName.trim()
-    if (!trimmed || !editingFolder) return
+    if (!trimmed) { setEditError('Folder name is required.'); return }
+    if (!editingFolder) return
     const isDuplicate = folders.some(
       f => f.id !== editingFolder.id && f.name.trim().toLowerCase() === trimmed.toLowerCase()
     )
     if (isDuplicate) { setEditError('A folder with this name already exists.'); return }
-    onEditFolder(editingFolder.id, trimmed)
+    onEditFolder(editingFolder.id, trimmed, editDescription.trim())
     toast.success('Folder updated successfully')
     handleEditClose()
   }
@@ -127,21 +138,25 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
   // ── Report actions ──────────────────────────────────────────────────────────
   const [editingReport, setEditingReport] = useState<Report | null>(null)
   const [editReportName, setEditReportName] = useState('')
+  const [editReportNameError, setEditReportNameError] = useState('')
   const [deletingReport, setDeletingReport] = useState<Report | null>(null)
 
   function handleEditReportOpen(report: Report) {
     setEditingReport(report)
     setEditReportName(report.name)
+    setEditReportNameError('')
   }
 
   function handleEditReportClose() {
     setEditingReport(null)
     setEditReportName('')
+    setEditReportNameError('')
   }
 
   function handleEditReportSave() {
     const trimmed = editReportName.trim()
-    if (!trimmed || !editingReport) return
+    if (!trimmed) { setEditReportNameError('Report name is required.'); return }
+    if (!editingReport) return
     onEditReport(editingReport.id, trimmed)
     toast.success('Report updated successfully')
     handleEditReportClose()
@@ -152,6 +167,20 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
     onDeleteReport(deletingReport.id)
     toast.success('Report deleted successfully')
     setDeletingReport(null)
+  }
+
+  function handleBulkDuplicate() {
+    selectedRows.forEach(id => onDuplicateReport(id))
+    const count = selectedRows.size
+    setSelectedRows(new Set())
+    toast.success(`${count} report${count > 1 ? 's' : ''} duplicated successfully`)
+  }
+
+  function handleBulkDelete() {
+    selectedRows.forEach(id => onDeleteReport(id))
+    const count = selectedRows.size
+    setSelectedRows(new Set())
+    toast.success(`${count} report${count > 1 ? 's' : ''} deleted successfully`)
   }
 
   const filteredReports = activeTab === 'all' ? reports : reports.filter(r => r.owner === activeTab)
@@ -271,11 +300,12 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
                 action={{ label: 'Add folder', onClick: () => setAddFolderOpen(true) }}
               />
             ) : (
+            <TooltipProvider>
             <div className="flex px-6 py-2 h-full items-center w-max">
               {folders.map((folder, i) => (
                   <div
                     key={folder.id}
-                    onClick={onOpenFolder}
+                    onClick={() => onOpenFolder?.(folder)}
                     className={`shrink-0 w-[340px] h-[126px] bg-card border border-border rounded-2xl flex flex-col px-4 py-3.5 gap-4 cursor-pointer hover:border-primary/40 transition-colors ${i < folders.length - 1 ? 'mr-4' : ''}`}
                   >
                     {/* Top row */}
@@ -295,7 +325,7 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
                             <EllipsisVertical size={16} className="text-muted-foreground" />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent>
                           <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditOpen(folder) }}>
                             <Pencil size={14} />
                             Edit
@@ -317,12 +347,28 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
                     </div>
                     {/* Bottom row */}
                     <div className="flex flex-col gap-1">
-                      <p className="text-[16px] font-bold text-foreground leading-6 truncate">{folder.name}</p>
-                      <p className="text-[12px] text-muted-foreground leading-4 truncate">{folder.description}</p>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="text-[16px] font-bold text-foreground leading-6 truncate">{folder.name}</p>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[260px] break-words">{folder.name}</TooltipContent>
+                      </Tooltip>
+                      {folder.description && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-[12px] text-muted-foreground leading-4 truncate">{folder.description}</p>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[260px] break-words">{folder.description}</TooltipContent>
+                        </Tooltip>
+                      )}
+                      {!folder.description && (
+                        <p className="text-[12px] text-muted-foreground leading-4 truncate">{folder.description}</p>
+                      )}
                     </div>
                   </div>
                 ))}
             </div>
+            </TooltipProvider>
             )}
           </div>
 
@@ -352,7 +398,7 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
             {selectedRows.size > 0 ? (
               <>
                 <span className="flex-1 text-[14px] font-medium text-foreground">
-                  Selected {selectedRows.size} record(s)
+                  {selectedRows.size} record{selectedRows.size > 1 ? 's' : ''} selected
                 </span>
                 <div className="flex items-center gap-2">
                   <Button variant="link" size="sm" onClick={() => setSelectedRows(new Set(filteredReports.map(r => r.id)))}>
@@ -361,14 +407,17 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
                   <Button variant="link" size="sm" onClick={() => setSelectedRows(new Set())}>
                     Deselect all
                   </Button>
-                  <Button variant="outline" size="sm">
-                    Duplicate <Copy size={14} />
+                  <Button variant="outline" size="sm" onClick={handleBulkDuplicate}>
+                    <Copy size={14} />
+                    Duplicate
                   </Button>
-                  <Button variant="outline" size="sm">
-                    Move to folder <FolderInput size={14} />
+                  <Button variant="outline" size="sm" onClick={() => setMoveToFolderOpen(true)}>
+                    <FolderInput size={14} />
+                    Move to folder
                   </Button>
-                  <Button variant="destructive" size="sm">
-                    Delete <Trash2 size={14} />
+                  <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                    <Trash2 size={14} />
+                    Delete
                   </Button>
                 </div>
               </>
@@ -429,7 +478,7 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
                       className={`cursor-pointer hover:bg-accent transition-colors ${selectedRows.has(report.id) ? 'bg-primary/5' : ''}`}
                       onClick={() => onOpenReport?.({ name: report.name, reportType: report.reportType, source: report.source })}
                     >
-                      <td className="h-14 px-2 align-middle border-b border-border">
+                      <td className="h-14 px-2 align-middle border-b border-border" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center h-full">
                           <Checkbox
                             checked={selectedRows.has(report.id)}
@@ -467,6 +516,10 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
                               <Copy size={14} />
                               Duplicate
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setSelectedRows(new Set([report.id])); setMoveToFolderOpen(true) }}>
+                              <FolderInput size={14} />
+                              Move to folder
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); toast.info('Schedule feature coming soon') }}>
                               <CalendarClock size={14} />
                               Add schedule
@@ -498,21 +551,33 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
         <DialogContent className="w-[400px]">
           <DialogHeader><DialogTitle>Edit folder</DialogTitle></DialogHeader>
           <DialogBody>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-folder-name">Folder name</Label>
-              <Input
-                id="edit-folder-name"
-                value={editName}
-                onChange={(e) => { setEditName(e.target.value); if (editError) setEditError('') }}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleEditSave() }}
-                autoFocus
-              />
-              {editError && <p className="text-[12px] text-destructive">{editError}</p>}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="edit-folder-name">Folder name</Label>
+                <Input
+                  id="edit-folder-name"
+                  value={editName}
+                  onChange={(e) => { setEditName(e.target.value); if (editError) setEditError('') }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleEditSave() }}
+                  autoFocus
+                />
+                {editError && <p className="text-[12px] text-destructive">{editError}</p>}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="edit-folder-description">Description</Label>
+                <Input
+                  id="edit-folder-description"
+                  placeholder="Add a description..."
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleEditSave() }}
+                />
+              </div>
             </div>
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={handleEditClose}>Cancel</Button>
-            <Button variant="default" disabled={!editName.trim()} onClick={handleEditSave}>Save</Button>
+            <Button variant="default" onClick={handleEditSave}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -543,15 +608,16 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
               <Input
                 id="edit-report-name"
                 value={editReportName}
-                onChange={(e) => setEditReportName(e.target.value)}
+                onChange={(e) => { setEditReportName(e.target.value); if (editReportNameError) setEditReportNameError('') }}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleEditReportSave() }}
                 autoFocus
               />
+              {editReportNameError && <p className="text-[12px] text-destructive">{editReportNameError}</p>}
             </div>
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={handleEditReportClose}>Cancel</Button>
-            <Button variant="default" disabled={!editReportName.trim()} onClick={handleEditReportSave}>Save</Button>
+            <Button variant="default" onClick={handleEditReportSave}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -571,6 +637,20 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Move to folder modal */}
+      <MoveToFolderModal
+        open={moveToFolderOpen}
+        onClose={() => setMoveToFolderOpen(false)}
+        folders={folders}
+        onConfirm={(targetFolderId, folderName) => {
+          const count = selectedRows.size
+          selectedRows.forEach(id => onMoveToFolder(id, targetFolderId))
+          setSelectedRows(new Set())
+          setMoveToFolderOpen(false)
+          toast.success(`${count} report${count > 1 ? 's' : ''} moved to "${folderName}"`)
+        }}
+      />
     </div>
   )
 }

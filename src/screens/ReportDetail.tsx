@@ -14,9 +14,6 @@ import {
   ChevronDown,
   Search,
   PanelLeft,
-  Share2,
-  FileInput,
-  Bot,
   Pencil,
   Play,
 } from 'lucide-react'
@@ -137,38 +134,6 @@ export function ReportDetail({ name, reportType, source, onBack, onNavigateToRep
             </div>
           </div>
 
-          {/* Info cards row */}
-          <div className="px-6 py-6 border-b border-border shrink-0">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex items-center gap-4 border border-border rounded-lg px-4 py-4">
-                <div className="flex flex-col gap-1 flex-1 min-w-0">
-                  <p className="text-[16px] font-bold text-foreground leading-6">Share with users</p>
-                  <p className="text-[12px] text-muted-foreground leading-4">Create a schedule for your reports through automations</p>
-                </div>
-                <Button variant="outline" size="icon" className="shrink-0">
-                  <Share2 size={16} />
-                </Button>
-              </div>
-              <div className="flex items-center gap-4 border border-border rounded-lg px-4 py-4">
-                <div className="flex flex-col gap-1 flex-1 min-w-0">
-                  <p className="text-[16px] font-bold text-foreground leading-6">Export report</p>
-                  <p className="text-[12px] text-muted-foreground leading-4">Create a schedule for your reports through automations</p>
-                </div>
-                <Button variant="outline" size="icon" className="shrink-0">
-                  <FileInput size={16} />
-                </Button>
-              </div>
-              <div className="flex items-center gap-4 border border-border rounded-lg px-4 py-4">
-                <div className="flex flex-col gap-1 flex-1 min-w-0">
-                  <p className="text-[16px] font-bold text-foreground leading-6">Report schedules</p>
-                  <p className="text-[12px] text-muted-foreground leading-4">Create a schedule for your reports through automations</p>
-                </div>
-                <Button variant="outline" size="icon" className="shrink-0">
-                  <Bot size={16} />
-                </Button>
-              </div>
-            </div>
-          </div>
 
           {/* Chart area */}
           <div className="flex-1 p-6 overflow-auto hover-scrollbar-y">

@@ -17,6 +17,10 @@ import {
   DialogFooter,
   Label,
   Input,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@assetpandallc/pioneer-design-system'
 import { CreateReportModal } from '../components/CreateReportModal'
 import { CreateFolderModal } from '../components/CreateFolderModal'
@@ -42,12 +46,12 @@ import {
 
 export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, onAddReport, onBack, onOpenFolder }: {
   folders: FolderItem[]
-  onAddFolder: (name: string) => void
+  onAddFolder: (name: string, description: string) => void
   onEditFolder: (id: string, name: string) => void
   onDeleteFolder: (id: string) => void
   onAddReport: (r: { name: string; reportType: ReportType; type: string; source: string }) => void
   onBack: () => void
-  onOpenFolder: () => void
+  onOpenFolder: (folder: FolderItem) => void
 }) {
   const [addReportOpen, setAddReportOpen] = useState(false)
   const [addFolderOpen, setAddFolderOpen] = useState(false)
@@ -91,7 +95,8 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
 
   function handleEditSave() {
     const trimmed = editName.trim()
-    if (!trimmed || !editFolder) return
+    if (!trimmed) { setEditError('Folder name is required.'); return }
+    if (!editFolder) return
 
     const isDuplicate = folders.some(
       f => f.id !== editFolder.id && f.name.trim().toLowerCase() === trimmed.toLowerCase()
@@ -212,13 +217,14 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
                 action={{ label: 'Add folder', onClick: () => setAddFolderOpen(true) }}
               />
             ) : (
+            <TooltipProvider>
             <div className="grid gap-4 grid-cols-4">
               {folders.map((folder) => {
                 const isSelected = selectedFolders.has(folder.id)
                 return (
                 <div
                   key={folder.id}
-                  onClick={() => onOpenFolder()}
+                  onClick={() => onOpenFolder(folder)}
                   onMouseEnter={() => setHoveredFolder(folder.id)}
                   onMouseLeave={() => setHoveredFolder(null)}
                   className={`bg-card border rounded-2xl flex flex-col px-4 py-3.5 gap-4 cursor-pointer transition-colors ${
@@ -254,7 +260,7 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
                           <EllipsisVertical size={16} className="text-muted-foreground" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent>
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditOpen(folder) }}>
                           <Pencil size={14} />
                           Edit
@@ -276,13 +282,29 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
                   </div>
                   {/* Bottom row */}
                   <div className="flex flex-col gap-1">
-                    <p className="text-[16px] font-bold text-foreground leading-6 truncate">{folder.name}</p>
-                    <p className="text-[12px] text-muted-foreground leading-4 truncate">{folder.description}</p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-[16px] font-bold text-foreground leading-6 truncate">{folder.name}</p>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[260px] break-words">{folder.name}</TooltipContent>
+                    </Tooltip>
+                    {folder.description && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className="text-[12px] text-muted-foreground leading-4 truncate">{folder.description}</p>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[260px] break-words">{folder.description}</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {!folder.description && (
+                      <p className="text-[12px] text-muted-foreground leading-4 truncate">{folder.description}</p>
+                    )}
                   </div>
                 </div>
                 )
               })}
             </div>
+            </TooltipProvider>
             )}
           </div>
         </div>
@@ -309,7 +331,7 @@ export function Folders({ folders, onAddFolder, onEditFolder, onDeleteFolder, on
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={handleEditClose}>Cancel</Button>
-            <Button variant="default" disabled={!editName.trim()} onClick={handleEditSave}>Save</Button>
+            <Button variant="default" onClick={handleEditSave}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
