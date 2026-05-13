@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
 @source "../node_modules/@assetpandallc/pioneer-design-system/dist";
 
 /* ─── Tailwind v4: map CSS variables → utility classes ─────────────────────

@@ -37,6 +37,13 @@ import {
   Checkbox,
   Command,
   CommandInput,
+  Input,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
   BarChartInteractive,
   LineChartInteractive,
   PieChartInteractive,
@@ -744,8 +751,7 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
                         {filterOperators.map(op => <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                    <input
-                      className="h-10 rounded-md border border-border bg-input px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20 w-full"
+                    <Input
                       placeholder=""
                       value={row.value}
                       onChange={(e) => updateFilter(row.id, 'value', e.target.value)}
@@ -818,24 +824,24 @@ export function CreateReportModal({ open, onClose, onAdd }: CreateReportModalPro
                     </div>
                   ) : (
                     <div className="overflow-x-auto hover-scrollbar rounded-md border border-border">
-                      <table className="w-full text-[13px] border-collapse">
-                        <thead>
-                          <tr className="bg-muted border-b border-border">
+                      <Table className="w-full text-[13px]">
+                        <TableHeader>
+                          <TableRow>
                             {visibleFields.map(f => (
-                              <th key={f.id} className="text-left font-semibold text-foreground px-3 py-2 whitespace-nowrap">{f.label}</th>
+                              <TableHead key={f.id} className="bg-muted whitespace-nowrap">{f.label}</TableHead>
                             ))}
-                          </tr>
-                        </thead>
-                        <tbody>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
                           {mockPreviewRows.map((row, i) => (
-                            <tr key={i} className={i < mockPreviewRows.length - 1 ? 'border-b border-border' : ''}>
+                            <TableRow key={i}>
                               {visibleFields.map(f => (
-                                <td key={f.id} className="px-3 py-2 text-foreground whitespace-nowrap">{row[f.id] ?? '—'}</td>
+                                <TableCell key={f.id} type="Text" className="whitespace-nowrap">{row[f.id] ?? '—'}</TableCell>
                               ))}
-                            </tr>
+                            </TableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     </div>
                   )}
                 </div>
