@@ -242,6 +242,7 @@ export function FolderDetail({ onBack, onNavigateToReports, source = 'folders', 
         aiOpen={false}
         userName="John Smith"
         userEmail="john@assetpanda.com"
+        defaultActiveSection="reports"
       />
 
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">

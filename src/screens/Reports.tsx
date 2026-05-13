@@ -211,6 +211,7 @@ export function Reports({ folders, reports, onAddFolder, onEditFolder, onDeleteF
         aiOpen={false}
         userName="John Smith"
         userEmail="john@assetpanda.com"
+        defaultActiveSection="reports"
       />
 
       {/* Main Content */}

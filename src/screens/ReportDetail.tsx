@@ -61,6 +61,7 @@ export function ReportDetail({ name, reportType, source, onBack, onNavigateToRep
         aiOpen={false}
         userName="John Smith"
         userEmail="john@assetpanda.com"
+        defaultActiveSection="reports"
       />
 
       {/* Main Content */}
